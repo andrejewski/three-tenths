@@ -1,0 +1,20 @@
+{
+  "name": "Three Tenths",
+  "short_name": "Three Tenths",
+  "start_url": "/three-tenths/?utm_source=a2hs",
+  "background_color": "#b6b282",
+  "display": "fullscreen",
+  "scope": "/three-tenth/",
+  "icons": [
+    {
+      "src": "icons/medium.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/large.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

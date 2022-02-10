@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Three Tenths</title>
+    <meta name="description" content="A game of precision where you must strike at exactly three tenths (3/10, 0.3, 3:7) along a given path." />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+    <meta name="author" content="Chris Andrejewski" />
+    <link rel="manifest" href="manifest.json" />
+    <style>
+      * {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
+          Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+          'Segoe UI Symbol';
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #b6b282;
+        touch-action: manipulation;
+      }
+
+
+      .background {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        align-self: stretch;
+      }
+
+      .watermark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 5vw;
+        left: 5vw;
+        right: 5vw;
+        bottom: 15vw;
+        font-size: 30vw;
+        font-weight: bold;
+        opacity: 0.1;
+        z-index: -1;
+        cursor: default;
+        user-select: none;
+      }
+
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .overlay-content {
+        background-color: rgba(0, 0, 0, 0.7);
+        flex: 1;
+        padding: 2vw 0;
+      }
+
+      .title {
+        font-size: 8vw;
+        text-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+        color: #fff;
+        margin: 0px;
+      }
+
+      .home {
+        width: 75vw;
+      }
+
+      .game-over {
+        text-align: center;
+      }
+
+      .practice {
+        opacity: 0;
+        position: relative;
+        top: -100vh;
+        animation: appear-from-above 0.25s ease-in 0.25s 1 forwards;
+      }
+
+      .practice-title {
+        font-size: 2.5vw;
+        color: #000;
+        margin: 0px;
+      }
+
+      .practice-hint {
+        margin-right: 2vw;
+        font-size: 1.4vw;
+      }
+
+      .practice-title,
+      .practice-hint {
+        opacity: 0;
+        animation: appear 0.25s ease-in 0.75s 1 forwards;
+      }
+
+      @keyframes appear-from-above {
+        0% {
+          opacity: 0;
+          top: -100vh;
+        }
+
+        100% {
+          opacity: 1;
+          top: 0vh;
+        }
+      }
+
+      @keyframes appear {
+        0% {
+          opacity: 0;
+        }
+
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .ruler {
+        display: flex;
+        align-items: center;
+        height: 8vw;
+        background-color: #eaea9f;
+        position: relative;
+      }
+
+      .ruler-tip-left {
+        position: absolute;
+        top: 0vw;
+        bottom: 0vw;
+        left: 0vw;
+        width: 4vw;
+        background-color: #d5d58c;
+      }
+
+      .ruler-tip-right {
+        position: absolute;
+        top: 0vw;
+        bottom: 0vw;
+        right: 0vw;
+        width: 4vw;
+        background-color: #d5d58c;
+      }
+
+      .ruler-28 {
+        flex: 28;
+        align-self: stretch;
+      }
+
+      .ruler-4 {
+        flex: 4;
+        align-self: stretch;
+      }
+
+      .ruler-68 {
+        flex: 68;
+        align-self: stretch;
+        font-size: 3vw;
+        text-transform: uppercase;
+        font-weight: bold;
+
+        display: flex;
+        align-items: center;
+        cursor: default;
+      }
+
+      .ruler-24 {
+        flex: 24;
+        align-self: stretch;
+      }
+
+      .ruler-12 {
+        flex: 12;
+        align-self: stretch;
+      }
+
+      .ruler-64 {
+        flex: 64;
+        align-self: stretch;
+        font-size: 3vw;
+        text-transform: uppercase;
+        font-weight: bold;
+
+        display: flex;
+        align-items: center;
+        cursor: default;
+      }
+
+      .hit-point-visible {
+        background-color: #ee5d5d;
+        cursor: pointer;
+        transition: background-color 0.1s linear;
+      }
+
+      .hit-point-visible:hover {
+        background-color: #e64545;
+      }
+
+      .hit-point-hint {
+        border-left: 0.5vw dashed #ee5d5d;
+        border-right: 0.5vw dashed #ee5d5d;
+      }
+
+      .ruler-hint {
+        padding-left: 3vw;
+        color: #404116;
+        transition: all 0.25s linear;
+      }
+
+      .ruler:hover .ruler-hint {
+        padding-left: 2vw;
+        color: #000;
+      }
+
+      .hero {
+        font-size: 6vw;
+        color: #000;
+        margin: 0px;
+      }
+
+      .footer {
+        text-align: right;
+      }
+
+      .grid {
+        font-size: 0px;
+        opacity: 0;
+        position: relative;
+        zoom: -50%;
+        bottom: -2vh;
+        animation: appear-from-center 0.05s ease-in 0.25s 1 forwards;
+      }
+
+      @keyframes appear-from-center {
+        0% {
+          opacity: 0;
+          zoom: -50%;
+          bottom: -2vh;
+        }
+
+        100% {
+          opacity: 1;
+          zoom: 1;
+          bottom: 0vh;
+        }
+      }
+
+
+
+      .tile {
+        display: inline-flex;
+        position: relative;
+        
+      }
+
+      .tile--match .tile-inner,
+      .tile--match .tile-outer {
+        background-color: #e64545 !important;
+      }
+
+      /* <START> */
+      .tile--start-left {
+        align-items: center;
+        justify-content: flex-start;
+        position: relative;
+      }
+
+      .tile--start-left .tile-outer {
+        background-color: #eaea9f;
+        width: 75%;
+        height: 50%;
+      }
+
+      .tile--start-left .tile-inner {
+        position: absolute;
+        right: 25%;
+        top: 25%;
+        bottom: 25%;
+        width: 25%;
+        background-color: #d5d58c;
+      }
+
+      .tile--start-right {
+        align-items: center;
+        justify-content: flex-end;
+        position: relative;
+      }
+
+      .tile--start-right .tile-outer {
+        background-color: #eaea9f;
+        width: 75%;
+        height: 50%;
+      }
+
+      .tile--start-right .tile-inner {
+        position: absolute;
+        left: 25%;
+        top: 25%;
+        bottom: 25%;
+        width: 25%;
+        background-color: #d5d58c;
+      }
+
+      .tile--start-top {
+        align-items: flex-start;
+        justify-content: center;
+        position: relative;
+      }
+
+      .tile--start-top .tile-outer {
+        background-color: #eaea9f;
+        width: 50%;
+        height: 75%;
+      }
+
+      .tile--start-top .tile-inner {
+        position: absolute;
+        left: 25%;
+        bottom: 25%;
+        right: 25%;
+        height: 25%;
+        background-color: #d5d58c;
+      }
+
+      .tile--start-bottom {
+        align-items: flex-end;
+        justify-content: center;
+        position: relative;
+      }
+
+      .tile--start-bottom .tile-outer {
+        background-color: #eaea9f;
+        width: 50%;
+        height: 75%;
+      }
+
+      .tile--start-bottom .tile-inner {
+        position: absolute;
+        left: 25%;
+        right: 25%;
+        top: 25%;
+        height: 25%;
+        background-color: #d5d58c;
+      }
+      /* </START> */
+
+      /* <END> */
+      .tile--end-right {
+        align-items: center;
+        justify-content: flex-start;
+      }
+
+      .tile--end-right .tile-outer {
+        background-color: #eaea9f;
+        width: 75%;
+        height: 50%;
+      }
+
+      .tile--end-left {
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .tile--end-left .tile-outer {
+        background-color: #eaea9f;
+        width: 75%;
+        height: 50%;
+      }
+
+      .tile--end-bottom {
+        align-items: flex-start;
+        justify-content: center;
+      }
+
+      .tile--end-bottom .tile-outer {
+        background-color: #eaea9f;
+        width: 50%;
+        height: 75%;
+      }
+
+      .tile--end-top {
+        align-items: flex-end;
+        justify-content: center;
+      }
+
+      .tile--end-top .tile-outer {
+        background-color: #eaea9f;
+        width: 50%;
+        height: 75%;
+      }
+      /* </END> */
+
+      /* <LINES> */
+      .tile--horizontal {
+        align-items: center;
+        justify-content: center;
+      }
+
+      .tile--horizontal .tile-outer {
+        background-color: #eaea9f;
+        width: 100%;
+        height: 50%;
+      }
+    
+      .tile--vertical {
+        align-items: center;
+        justify-content: center;
+      }
+
+      .tile--vertical .tile-outer {
+        background-color: #eaea9f;
+        width: 50%;
+        height: 100%;
+      }
+      /* </LINES> */
+
+      .tile--top-right {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        position: relative;
+      }
+
+      .tile--top-right .tile-outer {
+        background-color: #eaea9f;
+        width: 50%;
+        height: 75%;
+      }
+
+      .tile--top-right .tile-inner {
+        background-color: #eaea9f;
+        position: absolute;
+        bottom: 25%;
+        right: 0;
+        width: 75%;
+        height: 50%;
+      }
+
+      .tile--top-left {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        position: relative;
+      }
+
+      .tile--top-left .tile-outer {
+        background-color: #eaea9f;
+        width: 50%;
+        height: 75%;
+      }
+
+      .tile--top-left .tile-inner {
+        background-color: #eaea9f;
+        position: absolute;
+        bottom: 25%;
+        left: 0;
+        width: 75%;
+        height: 50%;
+      }
+
+      .tile--bottom-right {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        position: relative;
+      }
+
+      .tile--bottom-right .tile-outer {
+        background-color: #eaea9f;
+        width: 50%;
+        height: 75%;
+      }
+
+      .tile--bottom-right .tile-inner {
+        background-color: #eaea9f;
+        position: absolute;
+        top: 25%;
+        right: 0;
+        width: 75%;
+        height: 50%;
+      }
+
+      .tile--bottom-left {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+      }
+
+      .tile--bottom-left .tile-outer {
+        background-color: #eaea9f;
+        position: relative;
+        width: 50%;
+        height: 75%;
+      }
+
+      .tile--bottom-left .tile-inner {
+        background-color: #eaea9f;
+        position: absolute;
+        top: 25%;
+        left: 0;
+        width: 75%;
+        height: 50%;
+      }
+
+      /* //////// */
+
+      .score {
+        font-size: 6vw;
+        text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        color: #fff;
+        margin: 0px;
+        max-width: 90vw;
+        margin: 0px auto;
+      }
+
+      .game .subject {
+        font-size: 8vw;
+        font-weight: bold;
+        text-align: center;
+        margin: 0px;
+        padding: 1vw;
+      }
+
+      .button {
+        position: relative;
+        top: 0px;
+        border: none;
+        font-family: inherit;
+        font-weight: bold;
+        font-size: 3vw;
+        line-height: 2;
+        padding: 0px 2vw;
+        text-transform: uppercase;
+        border-radius: 2px;
+        text-align: center;
+        transition: 0.1s all linear;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .hover .button:hover {
+        top: -3px;
+      }
+
+      .button-primary {
+        background-color: yellow;
+        color: #000;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2),
+          inset 0 1px 0px rgba(255, 255, 255, 0.2);
+        text-shadow: 0 1px rgb(246, 255, 197);
+      }
+
+      .hover .button-primary:hover {
+        background-color: #fdff5f;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+        text-shadow: none;
+      }
+
+      .button-secondary {
+        background-color: #ffffff;
+        color: #000;
+      }
+
+      .button-set {
+        margin: 0px;
+        padding-top: 1.5vw;
+      }
+
+      .button-set .button {
+        margin: 0vw 1.5vw;
+      }
+
+      .count-down {
+        position: fixed;
+        top: 0px;
+        left: 0px;
+        right: 0px;
+        background-color: rgba(0, 0, 0, 0.1);
+        transition: all 0.25s linear;
+      }
+
+      .hint {
+        text-align: center;
+        opacity: 0.7;
+        margin: 0px;
+        padding: 1vw;
+      }
+
+      .info {
+        flex-direction: column;
+        background-color: rgba(255, 255, 255, 0.75);
+      }
+
+      .info header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: rgba(255, 255, 255, 0.75);
+        height: 7vw;
+        display: flex;
+        align-items: center;
+        padding: 0 3vw;
+        text-transform: uppercase;
+        font-size: 3vw;
+        font-weight: bold;
+        color: #333;
+        cursor: pointer;
+      }
+
+      .hover .info header:hover {
+        background-color: #fff;
+      }
+
+      .info article {
+        padding: 7vw 3vw;
+        overflow: auto;
+      }
+
+      .info article h1,
+      .info article h2,
+      .info article p {
+        margin: 0;
+        padding: 0.5vw 0;
+      }
+
+      .info article h1 {
+        font-size: 5vw;
+        color: #123;
+      }
+
+      .info article h2 {
+        font-size: 3vw;
+        color: #333;
+      }
+
+      .info article p {
+        font-size: 2vw;
+        color: #555;
+      }
+
+      .info article a {
+        text-decoration: underline;
+        color: #345;
+      }
+
+      .row, .tiles {
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+      }
+
+      .tile--floor {
+        border: 3px solid #fff;
+      }
+
+      .tile--floor.tile--active {
+        background-color: #fff;
+      }
+
+      .tile--start {
+        border: 3px solid #08f;
+      }
+
+      .tile--start.tile--active {
+        background-color: #08f;
+      }
+
+      .tile--block {
+        border: 3px solid #5d5a5a;
+      }
+
+      .tile--block.tile--active {
+        background-color: #5d5a5a;
+      }
+
+      .tile--death {
+        background-color: #000;
+        opacity: 0;
+      }
+
+      .tile--end {
+        border: 3px solid #30e330;
+      }
+
+      .tile--end.tile--active {
+        background-color: #30e330;
+      }
+
+      .level-title {
+        font-size: 15px;
+        text-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+        color: #a0b49d;
+        margin: 0px 0px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .level-title b {
+        flex: 1;
+      }
+
+      .level-title span {
+        display: inline-block;
+        padding-left: 10px;
+      }
+
+      .dpad {
+        position: fixed;
+        right: 5vmin;
+        bottom: 5vmin;
+        border-radius: 40%;
+        background-color: rgba(0, 0, 0, 0.3);
+        width: 40vmin;
+        height: 40vmin;
+        overflow: hidden;
+        transform: rotate(45deg);
+        z-index: 100;
+      }
+
+      .dpad-button {
+        display: inline-block;
+        border: none;
+        background-color: rgba(255, 255, 255, 0.4);
+        color: transparent;
+        width: 19vmin;
+        height: 19vmin;
+        padding: 0px;
+        margin: 1vmin;
+        outline: none;
+        border-radius: 20%;
+      }
+
+      .dpad-button:active {
+        background-color: #fff;
+      }
+
+      .dpad-up {
+        margin: 0 1vmin 1vmin 0;
+      }
+
+      .dpad-left {
+        margin: 1vmin 1vmin 0 0;
+      }
+
+      .dpad-right {
+        margin: 0 0 1vmin 1vmin;
+      }
+
+      .dpad-down {
+        margin: 1vmin 0 0 1vmin;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script src="elm.js"></script>
+    <script>
+      // HACK: Enable hover styles on non-touch devices
+      if (!('ontouchstart' in window)) {
+        document.body.className = 'hover'
+      }
+
+      const app = Elm.Main.init({
+        node: document.getElementById('root'),
+        flags: 0
+      })
+
+      app.ports.requestGrid.subscribe((size) => {
+        const path = generatePath(size)
+        const cutPoint = findPathCutPoint(path)
+        const { match, grid } = makeGridTiles(path, cutPoint)
+
+        app.ports.gridReceiver.send({grid, match})
+      });
+
+      const dirs = ['top', 'bottom', 'left', 'right']
+
+      function oneOf (list) {
+        const index = Math.floor(Math.random() * list.length)
+        return list[index]
+      }
+
+      function findPathCutPoint (path) {
+        return path[Math.floor(path.length * 0.3)]
+      }
+
+      function makeGridTiles (path, cutPoint) {
+        let maxX = -Infinity
+        let maxY = -Infinity
+        let minX = Infinity
+        let minY = Infinity
+        for (const [x, y] of path) {
+          maxX = Math.max(x, maxX)
+          maxY = Math.max(y, maxY)
+          minX = Math.min(x, minX)
+          minY = Math.min(y, minY)
+        }
+
+        const width = maxX - minX
+        const height = maxY - minY
+
+        const grid = []
+        let match
+        for (const [index, point] of Object.entries(path)) {
+          const i = parseInt(index, 10)
+          const prev = path[i - 1]
+          const next = path[i + 1]
+          const tile = getMoveTile(prev, point, next)
+
+          const [x, y] = point
+          const colIndex = x - minX
+          const rowIndex = y - minY
+
+          let row = grid[rowIndex]
+          if (!row) {
+            row = grid[rowIndex] = new Array(width).fill('none')
+          }
+
+          row[colIndex] = tile
+
+          if (x === cutPoint[0] && y === cutPoint[1]) {
+            match = [colIndex, rowIndex]
+          }
+        }
+
+        return { grid, match }
+      }
+
+      function getMoveTile (prev, self, next) {
+        if (!prev) {
+          return `start-${dirTo(self, next)}`
+        }
+
+        if (!next) {
+          return `end-${dirTo(prev, self)}`
+        }
+
+        return `${dirTo(self, prev)}-${dirTo(self, next)}`
+      }
+
+      function dirTo ([x1, y1], [x2, y2]) {
+        if (x1 > x2) {
+          return 'left'
+        }
+        if (y1 > y2) {
+          return 'top'
+        }
+        if (x1 < x2) {
+          return 'right'
+        }
+        if (y1 < y2) {
+          return 'bottom'
+        }
+      }
+
+      function generatePath (len) {
+        if (len < 2) {
+          return [[0,0]]
+        }
+
+        const existingPath = generatePath(len - 1)
+        const tailPath = tryToAppend(existingPath)
+        if (tailPath) {
+          return tailPath
+        }
+
+        existingPath.reverse()
+        const headPath = tryToAppend(existingPath)
+        if (headPath) {
+          return headPath
+        }
+
+        return existingPath
+      }
+
+      function tryToAppend (existingPath) {
+        const lastStep = existingPath[existingPath.length - 1]
+        let possibleDirs = [...dirs]
+        while (possibleDirs.length) {
+          const dir = oneOf(possibleDirs)
+          const nextStep = makeNextStep(lastStep, dir)
+          if (isValidNextStep(existingPath, nextStep, dir)) {
+            return existingPath.concat([nextStep])
+          }
+
+          possibleDirs = possibleDirs.filter(d => d !== dir)
+        }
+      }
+
+      function makeNextStep (lastStep, dir) {
+        const [x, y] = lastStep
+        switch (dir) {
+          case 'top': return [x, y - 1]
+          case 'bottom': return [x, y + 1]
+          case 'left': return [x - 1, y]
+          case 'right': return [x + 1, y]
+        }
+      }
+
+      function hasOverlap (steps, step) {
+        return steps.some(([x, y]) => x === step[0] && y === step[1])
+      }
+
+      function isValidNextStep (steps, step, dir) {
+        const overlap = hasOverlap(steps, step)
+        if (overlap) {
+          return false
+        }
+
+        const [x, y] = step
+        switch (dir) {
+          case 'top':
+          case 'bottom': {
+            const left = [x - 1, y]
+            const right = [x + 1, y]
+            const overlap = hasOverlap(steps, left) || hasOverlap(steps, right)
+            return !overlap
+          }
+          case 'left':
+          case 'right': {
+            const top = [x, y - 1]
+            const bottom = [x, y + 1]
+            const overlap = hasOverlap(steps, top) || hasOverlap(steps, bottom)
+            return !overlap
+          }
+        }
+      }
+
+    </script>
+    <script>
+      ;(function (i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r
+        ;(i[r] =
+          i[r] ||
+          function () {
+            ;(i[r].q = i[r].q || []).push(arguments)
+          }),
+          (i[r].l = 1 * new Date())
+        ;(a = s.createElement(o)), (m = s.getElementsByTagName(o)[0])
+        a.async = 1
+        a.src = g
+        m.parentNode.insertBefore(a, m)
+      })(
+        window,
+        document,
+        'script',
+        '//www.google-analytics.com/analytics.js',
+        'ga'
+      )
+      ga('create', 'UA-43674193-3', 'auto')
+      ga('send', 'pageview')
+    </script>
+  </body>
+</html>
